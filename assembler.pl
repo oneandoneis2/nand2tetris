@@ -20,16 +20,16 @@ while ($parse->hasMoreCommands) {
     my $type = $parse->commandType($command);   # Get its type
 
     if ($type eq 'A_COMMAND') {
-        say $parse->symbol($command)
+        say "A - " . $parse->symbol($command)
     }
     elsif ($type eq 'L_COMMAND') {
-        say $parse->symbol($command)
+        say "L - " . $parse->symbol($command)
     }
     elsif ($type eq 'C_COMMAND') {
-        say $parse->dest($command)
-        . " - Dest " . $parse->comp($command)
-        . " - Comp " . $parse->jump($command)
-        . " - Jump"
+        say "C - " .  " - Dest "
+        . $parse->dest($command) . " - Comp "
+        . $parse->comp($command) . " - Jump"
+        . $parse->jump($command)
     }
     else {
         die "How the hell did you get here?!?!?"
@@ -62,7 +62,6 @@ sub advance {
     return $next;
 }
 
-
 sub commandType {
     my ($self, $cmd) = @_;
     if ($cmd =~ /^\@$symbol_re/ || $cmd =~ /^\@\d+$/) {
@@ -87,7 +86,10 @@ sub commandType {
 sub symbol {
     my ($self, $cmd) = @_;
 
-    if ($cmd =~ /^@($symbol_re)$/) {
+    if ($cmd =~ /^\@($symbol_re)$/) {
+        return $1
+    }
+    elsif ($cmd =~ /^\@(\d+)$/) {
         return $1
     }
     elsif ($cmd =~ /^\(($symbol_re)\)$/) {
@@ -118,4 +120,81 @@ sub jump {
         return $1
     }
     return ''
+}
+
+package Code;
+
+sub num_to_bin_str {
+    my ($num, $size) = @_;
+    my $str = '';
+    while ($size--) {
+        if ($num % 2) {
+            $str = "1$str";
+        }
+        else {
+            $str = "0$str";
+        }
+        $num = $num >> 1 if $num;
+    }
+    return $str;
+}
+
+sub dest {
+    my $code = shift;
+    return 0 unless $code;
+    my $val = 0;
+    $val += 1 if $code =~ 'M';
+    $val += 2 if $code =~ 'D';
+    $val += 4 if $code =~ 'A';
+    return num_to_bin_str($val, 3);
+}
+
+sub comp {
+    my $code = shift;
+    my %mnemonics = (
+        '0'   => '0101010',
+        '1'   => '0111111',
+        '-1'  => '0001010',
+        'D'   => '0001100',
+        'A'   => '0110000',
+        '!D'  => '0001101',
+        '!A'  => '0110001',
+        '-D'  => '0001111',
+        '-A'  => '0110011',
+        'D+1' => '0011111',
+        'A+1' => '0110111',
+        'D-1' => '0001110',
+        'A-1' => '0110010',
+        'D+A' => '0000010',
+        'D-A' => '0010011',
+        'A-D' => '0000111',
+        'D&A' => '0000000',
+        'D|A' => '0010101',
+        'M'   => '1110000',
+        '!M'  => '1110001',
+        '-M'  => '1110011',
+        'M+1' => '1110111',
+        'M-1' => '1110010',
+        'D+M' => '1000010',
+        'D-M' => '1010011',
+        'M-D' => '1000111',
+        'D&M' => '1000000',
+        'D|M' => '1010101',
+    );
+    return $mnemonics{$code};
+}
+
+sub jump {
+    my $code = shift;
+    return num_to_bin_str(0, 3) unless $code;
+    my %jumps = (
+        JGT => 1,
+        JEQ => 2,
+        JGE => 3,
+        JLT => 4,
+        JNE => 5,
+        JLE => 6,
+        JMP => 7
+    );
+    return num_to_bin_str($jumps{$code}, 3);
 }
