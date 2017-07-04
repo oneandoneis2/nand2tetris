@@ -9,6 +9,7 @@ my $symbol_re = qr/[a-zA-Z_.$:][a-zA-Z0-9_.$:]*/;
 my $jump_re = qr/J(?:GT|EQ|GE|LT|NE|LE|MP)/;
 my $dest_re = qr/[AMD]{1,3}/;
 my $cmd_re = qr/[-AMD01!+*|]+/;
+my $debug = 1;
 
 # Run stuff here
 my $parse = Parser->new();
@@ -16,20 +17,21 @@ while ($parse->hasMoreCommands) {
     my $command = $parse->advance();    # Get next command
     next unless $command; # Some lines are comments
 
-    say "\t" . $command;
     my $type = $parse->commandType($command);   # Get its type
 
     if ($type eq 'A_COMMAND') {
-        say "A - " . $parse->symbol($command)
+        say 0
+        . Code::num_to_bin_str($parse->symbol($command), 15);
     }
     elsif ($type eq 'L_COMMAND') {
         say "L - " . $parse->symbol($command)
     }
     elsif ($type eq 'C_COMMAND') {
-        say "C - " .  " - Dest "
-        . $parse->dest($command) . " - Comp "
-        . $parse->comp($command) . " - Jump"
-        . $parse->jump($command)
+        say 111
+        . Code::comp( $parse->comp($command) )
+        . Code::dest( $parse->dest($command) )
+        . Code::jump( $parse->jump($command) )
+        ;
     }
     else {
         die "How the hell did you get here?!?!?"
@@ -141,7 +143,7 @@ sub num_to_bin_str {
 
 sub dest {
     my $code = shift;
-    return 0 unless $code;
+    return '000' unless $code;
     my $val = 0;
     $val += 1 if $code =~ 'M';
     $val += 2 if $code =~ 'D';
@@ -186,7 +188,7 @@ sub comp {
 
 sub jump {
     my $code = shift;
-    return num_to_bin_str(0, 3) unless $code;
+    return '000' unless $code;
     my %jumps = (
         JGT => 1,
         JEQ => 2,
