@@ -47,6 +47,11 @@ sub new {
     my $content = bless [];
     @$content = <$file>;
     close $file;
+    @$content = grep { $_ }
+                map {$_ =~ s#//.*##;$_} # Remove comments
+                map {$_ =~ s/^\s+//;$_} # Remove leading whitespace
+                map {$_ =~ s/\s+$//;$_} # Remove trailing whitespace
+                @$content;
     return $content;
 }
 
@@ -58,9 +63,6 @@ sub hasMoreCommands {
 sub advance {
     my $self = shift;
     my $next = shift @$self;
-    $next =~ s#//.*##;  # Remove comments
-    $next =~ s/^\s+//;  # Remove leading whitespace
-    $next =~ s/\s+$//;  # Remove trailing whitespace
     return $next;
 }
 
