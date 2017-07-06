@@ -15,7 +15,6 @@ my $debug = 1;
 my $parse = Parser->new();
 while ($parse->hasMoreCommands) {
     my $command = $parse->advance();    # Get next command
-    next unless $command; # Some lines are comments
 
     my $type = $parse->commandType($command);   # Get its type
 
@@ -44,25 +43,34 @@ sub new {
     die "No filename supplied" unless $filename;
     die "No such file" unless -e $filename;
     open(my $file, '<', $filename);
-    my $content = bless [];
-    @$content = <$file>;
+    my @content = <$file>;
     close $file;
-    @$content = grep { $_ }
+    @content = grep { $_ }             # No blank lines
                 map {$_ =~ s#//.*##;$_} # Remove comments
                 map {$_ =~ s/^\s+//;$_} # Remove leading whitespace
                 map {$_ =~ s/\s+$//;$_} # Remove trailing whitespace
-                @$content;
-    return $content;
+                @content;
+    return bless {
+        content => \@content,
+        line_no => 0
+        };
 }
 
 sub hasMoreCommands {
     my $self = shift;
-    return scalar @$self
+    if ($self->{line_no} >= scalar @{$self->{content}}) {
+        return 0
+    }
+    else {
+        return 1
+    }
 }
 
 sub advance {
     my $self = shift;
-    my $next = shift @$self;
+    my $line = $self->{line_no};
+    my $next = $self->{content}[$line];
+    $self->{line_no} = $line + 1;
     return $next;
 }
 
