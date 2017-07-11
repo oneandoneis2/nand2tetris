@@ -11,8 +11,43 @@ my $dest_re = qr/[AMD]{1,3}/;
 my $cmd_re = qr/[-AMD01!+*|]+/;
 my $debug = 1;
 
+my $symbol_number = 16;
+sub next_address {
+    return $symbol_number++;
+}
+
 # Run stuff here
 my $parse = Parser->new();
+
+# Build symbol table
+my $st = SymbolTable->new();
+
+my $line_no = 0;
+while ($parse->hasMoreCommands) {
+    my $command = $parse->advance();    # Get next command
+
+    my $type = $parse->commandType($command);   # Get its type
+
+    if ($type eq 'A_COMMAND') {
+        my $a_cmd = $parse->symbol($command);
+        if ($a_cmd !~ /^\d+$/) {
+            # It's a symbol A command
+            # Create it if necessary
+            unless ($st->contains($a_cmd)) {
+                $st->addEntry( $a_cmd, next_address() )
+            }
+        }
+    }
+    elsif ($type eq 'L_COMMAND') {
+        my $l_cmd = $parse->symbol($command);
+        $st->addEntry( $l_cmd, $line_no );
+        next;   # We don't want to increment the line number for a label
+    }
+    $line_no ++
+}
+
+# Now we know about the symbols, do the assembling
+$parse->reset();
 while ($parse->hasMoreCommands) {
     my $command = $parse->advance();    # Get next command
 
@@ -23,7 +58,7 @@ while ($parse->hasMoreCommands) {
         . Code::num_to_bin_str($parse->symbol($command), 15);
     }
     elsif ($type eq 'L_COMMAND') {
-        say "L - " . $parse->symbol($command)
+        next;
     }
     elsif ($type eq 'C_COMMAND') {
         say 111
@@ -46,13 +81,14 @@ sub new {
     my @content = <$file>;
     close $file;
     @content = grep { $_ }             # No blank lines
-                map {$_ =~ s#//.*##;$_} # Remove comments
                 map {$_ =~ s/^\s+//;$_} # Remove leading whitespace
                 map {$_ =~ s/\s+$//;$_} # Remove trailing whitespace
+                map {$_ =~ s#//.*##;$_} # Remove comments
                 @content;
     return bless {
         content => \@content,
-        line_no => 0
+        line_no => 0,
+        symbols => {}
         };
 }
 
@@ -72,6 +108,11 @@ sub advance {
     my $next = $self->{content}[$line];
     $self->{line_no} = $line + 1;
     return $next;
+}
+
+sub reset {
+    my $self = shift;
+    $self->{line_no} = 0;
 }
 
 sub commandType {
@@ -138,6 +179,11 @@ package Code;
 
 sub num_to_bin_str {
     my ($num, $size) = @_;
+    unless ($num =~ /^\d+$/) {
+        # Symbol, not number.
+        # Get the number we want from the symbol table
+        $num = $st->GetAddress($num)
+    }
     my $str = '';
     while ($size--) {
         if ($num % 2) {
@@ -209,4 +255,24 @@ sub jump {
         JMP => 7
     );
     return num_to_bin_str($jumps{$code}, 3);
+}
+
+package SymbolTable;
+sub new {
+    return bless {};
+}
+
+sub addEntry {
+    my ($self, $symbol, $address) = @_;
+    $self->{$symbol} = $address;
+}
+
+sub contains {
+    my ($self, $symbol) = @_;
+    return defined $self->{$symbol}
+}
+
+sub GetAddress {
+    my ($self, $symbol) = @_;
+    return $self->{$symbol}
 }
