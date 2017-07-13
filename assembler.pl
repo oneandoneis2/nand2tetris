@@ -8,7 +8,7 @@ use v5.12;
 my $symbol_re = qr/[a-zA-Z_.$:][a-zA-Z0-9_.$:]*/;
 my $jump_re = qr/J(?:GT|EQ|GE|LT|NE|LE|MP)/;
 my $dest_re = qr/[AMD]{1,3}/;
-my $cmd_re = qr/[-AMD01!+*|]+/;
+my $cmd_re = qr/[-AMD01!+*|&]+/;
 my $debug = 1;
 
 my $symbol_number = 16;
@@ -28,17 +28,7 @@ while ($parse->hasMoreCommands) {
 
     my $type = $parse->commandType($command);   # Get its type
 
-    if ($type eq 'A_COMMAND') {
-        my $a_cmd = $parse->symbol($command);
-        if ($a_cmd !~ /^\d+$/) {
-            # It's a symbol A command
-            # Create it if necessary
-            unless ($st->contains($a_cmd)) {
-                $st->addEntry( $a_cmd, next_address() )
-            }
-        }
-    }
-    elsif ($type eq 'L_COMMAND') {
+    if ($type eq 'L_COMMAND') {
         my $l_cmd = $parse->symbol($command);
         $st->addEntry( $l_cmd, $line_no );
         next;   # We don't want to increment the line number for a label
@@ -54,8 +44,16 @@ while ($parse->hasMoreCommands) {
     my $type = $parse->commandType($command);   # Get its type
 
     if ($type eq 'A_COMMAND') {
+        my $a_cmd = $parse->symbol($command);
+        if ($a_cmd !~ /^\d+$/) {
+            # It's a symbol A command
+            # Add to symbol table if necessary
+            unless ($st->contains($a_cmd)) {
+                $st->addEntry( $a_cmd, next_address() )
+            }
+        }
         say 0
-        . Code::num_to_bin_str($parse->symbol($command), 15);
+        . Code::num_to_bin_str($a_cmd, 15);
     }
     elsif ($type eq 'L_COMMAND') {
         next;
@@ -121,7 +119,7 @@ sub commandType {
         # An A-command can be either a symbol or a number prefix with @
         return 'A_COMMAND'
     }
-    elsif ($cmd =~ /\($symbol_re\)/) {
+    elsif ( $cmd =~ /^\(/ && $cmd =~ /\)/ && $cmd =~ /$symbol_re/) {
         # An L-command is a symbol in parens
         return 'L_COMMAND'
     }
@@ -139,13 +137,13 @@ sub commandType {
 sub symbol {
     my ($self, $cmd) = @_;
 
-    if ($cmd =~ /^\@($symbol_re)$/) {
+    if ($cmd =~ /^\@(.+)$/) {
         return $1
     }
     elsif ($cmd =~ /^\@(\d+)$/) {
         return $1
     }
-    elsif ($cmd =~ /^\(($symbol_re)\)$/) {
+    elsif ($cmd =~ /^\((.+)\)$/) {
         return $1
     }
 }
@@ -212,7 +210,7 @@ sub comp {
     my %mnemonics = (
         '0'   => '0101010',
         '1'   => '0111111',
-        '-1'  => '0001010',
+        '-1'  => '0111010',
         'D'   => '0001100',
         'A'   => '0110000',
         '!D'  => '0001101',
@@ -259,7 +257,19 @@ sub jump {
 
 package SymbolTable;
 sub new {
-    return bless {};
+    my $st = {};
+    # Sort out the predefined symbols
+    for my $i (0..15) {
+        $st->{"R$i"} = $i;
+    }
+    $st->{SP}     = 0;
+    $st->{LCL}    = 1;
+    $st->{ARG}    = 2;
+    $st->{THIS}   = 3;
+    $st->{THAT}   = 4;
+    $st->{KBD}    = 24576;
+    $st->{SCREEN} = 16384;
+    return bless $st;
 }
 
 sub addEntry {
