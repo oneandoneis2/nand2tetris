@@ -1,11 +1,21 @@
 #!/usr/bin/clisp
 
-(defvar *source* ())
+; Define the Parse package
+(defpackage :parse
+  (:use :cl)
+  (:export :new))
 
-(with-open-file (src (first *args*))
-  (setf *source*
-        (loop for line = (read-line src nil)
-              while line
-              collect line)))
+(in-package :parse)
+
+(defun new (filename)
+  (with-open-file (src filename)
+    (loop for line = (read-line src nil)
+          while line
+          collect line)))
+
+; Package defs all done, do the assembling!
+(in-package :common-lisp-user)
+
+(defvar *source* (parse:new (first *args*)))
 
 (princ *source*)
