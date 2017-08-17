@@ -18,4 +18,4 @@
 
 (defvar *source* (parse:new (first *args*)))
 
-(princ *source*)
+(format t "~{~a~%~}" *source*)
