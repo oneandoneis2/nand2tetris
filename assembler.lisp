@@ -1,21 +1,26 @@
 #!/usr/bin/clisp
 
-; Define the Parse package
-(defpackage :parse
-  (:use :cl)
-  (:export :new))
+; Define the Parse class
+(defclass parse ()
+  ((filename :initarg :file
+             :reader filename)
+   (data :initform nil :accessor data)))
 
-(in-package :parse)
+; Define the Parse methods
+; On initialization, read the file
+(defmethod initialize-instance :after ((p parse) &key)
+  (setf (data p)
+        (with-open-file (src (filename p))
+          (loop for line = (read-line src nil)
+                while line
+                collect line))))
 
-(defun new (filename)
-  (with-open-file (src filename)
-    (loop for line = (read-line src nil)
-          while line
-          collect line)))
+(defmethod hasMoreCommands ((p parse))
+  (> (length (data p)) 0))
 
-; Package defs all done, do the assembling!
-(in-package :common-lisp-user)
+(defmethod output ((p parse))
+  (format t "~{~a~%~}" (data p)))
 
-(defvar *source* (parse:new (first *args*)))
-
-(format t "~{~a~%~}" *source*)
+; Objects defined, do the thing
+(defvar *parse* (make-instance 'parse :file (first *args*)))
+(output *parse*)
