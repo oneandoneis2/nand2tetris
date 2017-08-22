@@ -14,7 +14,8 @@
         (with-open-file (src (filename p))
           (loop for line = (read-line src nil)
                 while line
-                collect line))))
+                if (string/= "" line)   ; skip blanks
+                collect (string-trim '(#\Space #\Tab #\Newline) line)))))
 
 (defmethod hasMoreCommands ((p parse))
   (> (- (size p) (line p)) 0))
