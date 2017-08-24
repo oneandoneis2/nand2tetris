@@ -39,7 +39,7 @@
           ((stringstart cmd "(") 'L)
           ((search "=" cmd) 'C)
           ((search ";" cmd) 'C)
-          (t 'other))))
+          (t (error "Unknown type for command: ~a" cmd)))))
 
 (defun stringstart (str chr)
   (string= chr str :start2 0 :end2 1))
@@ -53,6 +53,11 @@
                  #'purgewhite
                  (mapcar #'purgecomment lst)))))
 
+(defmethod symbol ((p parse))
+  (let ((cmd (current p)))
+    (cond ((stringstart cmd "@") (subseq cmd 1))
+          ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 2)))
+          (t (error "Can't get symbol from ~a" cmd)))))
 
 ; Objects defined, do the thing
 (defvar *parse* (make-instance 'parse :file (first *args*)))
@@ -60,5 +65,8 @@
 (loop for line = (current *parse*)
       while (hasMoreCommands *parse*)
       do (progn
+           (if (or (eq 'A (commandType *parse*))
+                   (eq 'L (commandType *parse*)))
+             (format t "~a - " (symbol *parse*)))
            (format t "~a ~a~%" (commandType *parse*) line)
            (advance *parse*)))
