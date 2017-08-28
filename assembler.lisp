@@ -59,14 +59,23 @@
           ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 2)))
           (t (error "Can't get symbol from ~a" cmd)))))
 
+(defmethod dest ((p parse))
+  (let* ((cmd (current p))
+         (eqpos (search "=" cmd)))
+    (if eqpos
+      (subseq cmd 0 eqpos)
+      "")))
+
 ; Objects defined, do the thing
 (defvar *parse* (make-instance 'parse :file (first *args*)))
 (defvar *command* nil)
 (loop for line = (current *parse*)
       while (hasMoreCommands *parse*)
       do (progn
-           (if (or (eq 'A (commandType *parse*))
-                   (eq 'L (commandType *parse*)))
-             (format t "~a - " (symbol *parse*)))
+           (cond ((or (eq 'A (commandType *parse*))
+                      (eq 'L (commandType *parse*)))
+                  (format t "~a - " (symbol *parse*)))
+                 ((eq 'C (commandType *parse*))
+                  (format t "~a - " (dest *parse*))))
            (format t "~a ~a~%" (commandType *parse*) line)
            (advance *parse*)))
