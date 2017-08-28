@@ -66,6 +66,21 @@
       (subseq cmd 0 eqpos)
       "")))
 
+(defmethod comp ((p parse))
+  (let ((cmd (current p)))
+    ; C-command format is foo=bar;baz
+    ; but only 'bar' is gauranteed
+    (let ((eqpos (+ 1 (or (search "=" cmd) -1)))
+          (semipos (or (search ";" cmd) (length cmd))))
+      (subseq cmd eqpos semipos))))
+
+(defmethod jump ((p parse))
+  (let* ((cmd (current p))
+         (semipos (search ";" cmd)))
+    (if semipos
+      (subseq cmd (+ 1 semipos) (length cmd))
+      "")))
+
 ; Objects defined, do the thing
 (defvar *parse* (make-instance 'parse :file (first *args*)))
 (defvar *command* nil)
@@ -76,6 +91,6 @@
                       (eq 'L (commandType *parse*)))
                   (format t "~a - " (symbol *parse*)))
                  ((eq 'C (commandType *parse*))
-                  (format t "~a - " (dest *parse*))))
+                  (format t "~a/~a/~a- " (dest *parse*) (comp *parse*) (jump *parse*))))
            (format t "~a ~a~%" (commandType *parse*) line)
            (advance *parse*)))
