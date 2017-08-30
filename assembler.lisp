@@ -75,6 +75,9 @@
           ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 2)))
           (t (error "Can't get symbol from ~a" cmd)))))
 
+; The parse & code methods
+; Parse versions extract the string portion
+; Code versions return binary data (as string)
 (defmethod dest ((p parse))
   (let* ((cmd (current p))
          (eqpos (search "=" cmd)))
@@ -124,35 +127,21 @@
 
 ; Objects defined, do the thing
 (defvar *parse* (make-instance 'parse :file (first *args*)))
+
+; We need a mnemonic conversion table. Stick it in a hash
 (defvar *mnemonics* (make-hash-table :test 'equal))
-(setf (gethash "0"   *mnemonics*) "0101010")
-(setf (gethash "1"   *mnemonics*) "0111111")
-(setf (gethash "-1"  *mnemonics*) "0111010")
-(setf (gethash "D"   *mnemonics*) "0001100")
-(setf (gethash "A"   *mnemonics*) "0110000")
-(setf (gethash "!D"  *mnemonics*) "0001101")
-(setf (gethash "!A"  *mnemonics*) "0110001")
-(setf (gethash "-D"  *mnemonics*) "0001111")
-(setf (gethash "-A"  *mnemonics*) "0110011")
-(setf (gethash "D+1" *mnemonics*) "0011111")
-(setf (gethash "A+1" *mnemonics*) "0110111")
-(setf (gethash "D-1" *mnemonics*) "0001110")
-(setf (gethash "A-1" *mnemonics*) "0110010")
-(setf (gethash "D+A" *mnemonics*) "0000010")
-(setf (gethash "D-A" *mnemonics*) "0010011")
-(setf (gethash "A-D" *mnemonics*) "0000111")
-(setf (gethash "D&A" *mnemonics*) "0000000")
-(setf (gethash "D|A" *mnemonics*) "0010101")
-(setf (gethash "M"   *mnemonics*) "1110000")
-(setf (gethash "!M"  *mnemonics*) "1110001")
-(setf (gethash "-M"  *mnemonics*) "1110011")
-(setf (gethash "M+1" *mnemonics*) "1110111")
-(setf (gethash "M-1" *mnemonics*) "1110010")
-(setf (gethash "D+M" *mnemonics*) "1000010")
-(setf (gethash "D-M" *mnemonics*) "1010011")
-(setf (gethash "M-D" *mnemonics*) "1000111")
-(setf (gethash "D&M" *mnemonics*) "1000000")
-(setf (gethash "D|M" *mnemonics*) "1010101")
+
+; To drastically reduce repetition, use a macro to popualte the hash
+(defmacro putmnem (pairs)
+  (cons 'progn (loop for (key value) in pairs
+                     collect `(setf (gethash ,key *mnemonics*) ,value))))
+(putmnem (("0"   "0101010") ("1"   "0111111") ("-1"  "0111010") ("D"   "0001100")
+          ("A"   "0110000") ("!D"  "0001101") ("!A"  "0110001") ("-D"  "0001111")
+          ("-A"  "0110011") ("D+1" "0011111") ("A+1" "0110111") ("D-1" "0001110")
+          ("A-1" "0110010") ("D+A" "0000010") ("D-A" "0010011") ("A-D" "0000111")
+          ("D&A" "0000000") ("D|A" "0010101") ("M"   "1110000") ("!M"  "1110001")
+          ("-M"  "1110011") ("M+1" "1110111") ("M-1" "1110010") ("D+M" "1000010")
+          ("D-M" "1010011") ("M-D" "1000111") ("D&M" "1000000") ("D|M" "1010101")))
 
 (defvar *command* nil)
 (loop for line = (current *parse*)
