@@ -39,13 +39,17 @@
 (defmethod current ((p parse))
   (nth (line p) (data p)))
 
+; To cut down on duplicate letting, a simple macro:
+(defmacro forcmd (&body body)
+  `(let ((cmd (current p)))
+     ,@body))
+
 (defmethod commandType ((p parse))
-  (let ((cmd (current p)))
-    (cond ((stringstart cmd "@") 'A)
-          ((stringstart cmd "(") 'L)
-          ((search "=" cmd) 'C)
-          ((search ";" cmd) 'C)
-          (t (error "Unknown type for command: ~a" cmd)))))
+  (forcmd (cond ((stringstart cmd "@") 'A)
+                ((stringstart cmd "(") 'L)
+                ((search "=" cmd) 'C)
+                ((search ";" cmd) 'C)
+                (t (error "Unknown type for command: ~a" cmd)))))
 
 (defun stringstart (str chr)
   (string= chr str :start2 0 :end2 1))
@@ -70,20 +74,18 @@
     str))
 
 (defmethod symbol ((p parse))
-  (let ((cmd (current p)))
-    (cond ((stringstart cmd "@") (subseq cmd 1))
-          ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 2)))
-          (t (error "Can't get symbol from ~a" cmd)))))
+  (forcmd (cond ((stringstart cmd "@") (subseq cmd 1))
+                ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 2)))
+                (t (error "Can't get symbol from ~a" cmd)))))
 
 ; The parse & code methods
 ; Parse versions extract the string portion
 ; Code versions return binary data (as string)
 (defmethod dest ((p parse))
-  (let* ((cmd (current p))
-         (eqpos (search "=" cmd)))
-    (if eqpos
-      (subseq cmd 0 eqpos)
-      nil)))
+  (forcmd (let ((eqpos (search "=" cmd)))
+            (if eqpos
+              (subseq cmd 0 eqpos)
+              nil))))
 
 (defmethod dest ((c code))
   (let ((cmd (d c)))
@@ -95,7 +97,7 @@
       "000")))
 
 (defmethod comp ((p parse))
-  (let ((cmd (current p)))
+  (forcmd
     ; C-command format is foo=bar;baz
     ; but only 'bar' is gauranteed
     (let ((eqpos (+ 1 (or (search "=" cmd) -1)))
@@ -106,11 +108,10 @@
   (gethash (c c) *mnemonics*))
 
 (defmethod jump ((p parse))
-  (let* ((cmd (current p))
-         (semipos (search ";" cmd)))
-    (if semipos
-      (subseq cmd (+ 1 semipos) (length cmd))
-      nil)))
+  (forcmd (let ((semipos (search ";" cmd)))
+            (if semipos
+              (subseq cmd (+ 1 semipos) (length cmd))
+              nil))))
 
 (defmethod jump ((c code))
   (let ((cmd (j c)))
