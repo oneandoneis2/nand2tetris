@@ -74,13 +74,12 @@
         lst))))
 
 (defun num->bin (num size)
-  (let ((str ""))
-    (loop while (> size 0)
-          do (if (= 1 (mod num 2))
-               (setf str (concatenate 'string "1" str))
-               (setf str (concatenate 'string "0" str)))
-          (setf num (ash num -1))
-          (decf size))
+  (let ((str (make-array size :element-type 'character)))
+    (loop for i downfrom (1- size) to 0
+          do (if (zerop (mod num 2))
+               (setf (elt str i) #\0)
+               (setf (elt str i) #\1))
+          (setf num (ash num -1)))
     str))
 
 (defmethod symbol ((p parse))
