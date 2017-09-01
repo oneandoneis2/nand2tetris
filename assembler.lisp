@@ -43,6 +43,9 @@
     (incf (line p)))
   (current p))
 
+(defmethod reset ((p parse))
+  (setf (line p) 0))
+
 (defmethod current ((p parse))
   (nth (line p) (data p)))
 
@@ -62,13 +65,13 @@
   (string= chr str :start2 0 :end2 1))
 
 (defun strip (lst)
-  (labels ((emptyp (str) (string= "" str))
-           (purgecomment (str) (subseq str 0 (search "//" str)))
-           (purgewhite (str) (string-trim '(#\Space #\Tab #\Newline) str)))
-    (remove-if #'emptyp
-               (mapcar
-                 #'purgewhite
-                 (mapcar #'purgecomment lst)))))
+  (remove-if
+    (lambda (str) (string= "" str))                                 ; Skip empty lines
+    (mapcar
+      (lambda (str) (string-trim '(#\Space #\Tab #\Newline) str))   ; Remove whitespace
+      (mapcar
+        (lambda (str) (subseq str 0 (search "//" str)))             ; Remove comments
+        lst))))
 
 (defun num->bin (num size)
   (let ((str ""))
