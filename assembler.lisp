@@ -74,13 +74,7 @@
         lst))))
 
 (defun num->bin (num size)
-  (let ((str (make-array size :element-type 'character)))
-    (loop for i downfrom (1- size) to 0
-          do (if (zerop (mod num 2))
-               (setf (elt str i) #\0)
-               (setf (elt str i) #\1))
-          (setf num (ash num -1)))
-    str))
+  (format nil "~v,'0b" size num))
 
 (defmethod symbol ((p parse))
   (forcmd (cond ((stringstart cmd "@") (subseq cmd 1))
