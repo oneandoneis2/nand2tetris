@@ -145,8 +145,6 @@
       by #'cddr
       do (setf (gethash key *mnemonics*) value))
 
-(defvar *command* nil)
-
 (defmethod processCommand ((type (eql 'C)))
   (let ((code (make-instance 'code
                              :dest (dest *parse*)
