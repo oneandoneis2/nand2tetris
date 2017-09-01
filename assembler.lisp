@@ -145,16 +145,19 @@
            "D-M" "1010011" "M-D" "1000111" "D&M" "1000000" "D|M" "1010101"))
 
 (defvar *command* nil)
+
+(defmethod processCommand ((type (eql 'C)))
+  (let ((code (make-instance 'code
+                             :dest (dest *parse*)
+                             :comp (comp *parse*)
+                             :jump (jump *parse*))))
+    (format t "111~a~a~a~%" (comp code) (dest code) (jump code))))
+
+(defmethod processCommand (type)
+  (format t "0~a~%" (num->bin (parse-integer (symbol *parse*)) 15)))
+
 (loop for line = (current *parse*)
       while (hasMoreCommands *parse*)
       do (progn
-           (cond ((or (eq 'A (commandType *parse*))
-                      (eq 'L (commandType *parse*)))
-                  (format t "0~a~%" (num->bin (parse-integer (symbol *parse*)) 15)))
-                 ((eq 'C (commandType *parse*))
-                  (let ((code (make-instance 'code
-                                             :dest (dest *parse*)
-                                             :comp (comp *parse*)
-                                             :jump (jump *parse*))))
-                    (format t "111~a~a~a~%" (comp code) (dest code) (jump code)))))
+           (processCommand (commandType *parse*))
            (advance *parse*)))
