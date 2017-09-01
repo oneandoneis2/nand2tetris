@@ -85,12 +85,14 @@
 ; Parse versions extract the string portion
 ; Code versions return binary data (as string)
 (defmethod dest ((p parse))
+  "Returns the string before an equals sign, or false"
   (forcmd (let ((eqpos (search "=" cmd)))
             (if eqpos
               (subseq cmd 0 eqpos)
               nil))))
 
 (defmethod dest ((c code))
+  "Convert destination mnemonic to appropriate binary"
   (let ((cmd (d c)))
     (if cmd
       (num->bin (+ (if (search "M" cmd) 1 0)
@@ -100,6 +102,7 @@
       "000")))
 
 (defmethod comp ((p parse))
+  "Return the compute part of the command - complex as the other parts are optional"
   (forcmd
     ; C-command format is foo=bar;baz
     ; but only 'bar' is gauranteed
@@ -111,6 +114,7 @@
   (gethash (c c) *mnemonics*))
 
 (defmethod jump ((p parse))
+  "Return the jump position if specified - the portion after a semicolon"
   (forcmd (let ((semipos (search ";" cmd)))
             (if semipos
               (subseq cmd (+ 1 semipos) (length cmd))
@@ -119,8 +123,7 @@
 (defmethod jump ((c code))
   (let ((cmd (j c)))
     (if cmd
-      (num->bin (gethash cmd (jumpcodes *parse*))
-                3)
+      (num->bin (gethash cmd (jumpcodes *parse*)) 3)
       "000")))
 
 ; Objects defined, do the thing
