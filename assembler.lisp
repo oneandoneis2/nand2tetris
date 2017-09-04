@@ -89,6 +89,11 @@
 (defun num->bin (num size)
   (format nil "~v,'0b" size num))
 
+(let ((next 16))
+  (defun nextAddress ()
+    (incf next)
+    (- next 1)))
+
 (defmethod symbol ((p parse))
   (forcmd (cond ((stringstart cmd "@") (subseq cmd 1))
                 ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 1)))
@@ -164,8 +169,21 @@
                              :jump (jump *parse*))))
     (format t "111~a~a~a~%" (comp code) (dest code) (jump code))))
 
-(defmethod processCommand (type)
-  (format t "0~a~%" (num->bin (parse-integer (symbol *parse*)) 15)))
+(defmethod processCommand ((type (eql 'A)))
+  (labels ((numericp (x) (ignore-errors (parse-integer x))))
+    (let ((a (symbol *parse*))
+          (num 0))
+      (if (numericp a)
+        (setf num (parse-integer a))
+        (progn
+          (unless (contains *st* a)
+            (addEntry *st* a (nextAddress)))
+          (setf num (GetAddress *st* a))))
+      (format t "0~a~%" (num->bin num 15)))))
+
+(defmethod processCommand ((type (eql 'L)))
+  ; Nothing to do on L-commands
+  nil)
 
 ; Create symbol table
 (defvar *st* (make-instance 'symbolTable))
