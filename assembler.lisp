@@ -67,34 +67,6 @@
                 ((search ";" cmd) 'C)
                 (t (error "Unknown type for command: ~a" cmd)))))
 
-(defun stringstart (str chr)
-  (string= chr str :start2 0 :end2 1))
-
-(defun strip (lst)
-  (remove-if
-    (lambda (str) (string= "" str))                                 ; Skip empty lines
-    (mapcar
-      (lambda (str) (string-trim '(#\Space #\Tab #\Newline) str))   ; Remove whitespace
-      (mapcar
-        (lambda (str) (subseq str 0 (search "//" str)))             ; Remove comments
-        lst))))
-
-(defun num->bin (num size)
-  (format nil "~v,'0b" size num))
-
-(let ((hash (make-hash-table :test 'equal)))
-  (loop for (key . value)
-        in '(("JGT" . 1)("JEQ" . 2)("JGE" . 3)("JLT" . 4)
-             ("JNE" . 5)("JLE" . 6)("JMP" . 7))
-        do (setf (gethash key hash) value))
-  (defun jumpcodes (cmd)
-    (gethash cmd hash)))
-
-(let ((next 16))
-  (defun nextAddress ()
-    (incf next)
-    (- next 1)))
-
 (defmethod symbol ((p parse))
   (forcmd (cond ((stringstart cmd "@") (subseq cmd 1))
                 ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 1)))
@@ -167,6 +139,34 @@
 (defmethod processCommand ((type (eql 'L)))
   ; Nothing to do on L-commands
   nil)
+
+(defun stringstart (str chr)
+  (string= chr str :start2 0 :end2 1))
+
+(defun strip (lst)
+  (remove-if
+    (lambda (str) (string= "" str))                                 ; Skip empty lines
+    (mapcar
+      (lambda (str) (string-trim '(#\Space #\Tab #\Newline) str))   ; Remove whitespace
+      (mapcar
+        (lambda (str) (subseq str 0 (search "//" str)))             ; Remove comments
+        lst))))
+
+(defun num->bin (num size)
+  (format nil "~v,'0b" size num))
+
+(let ((hash (make-hash-table :test 'equal)))
+  (loop for (key . value)
+        in '(("JGT" . 1)("JEQ" . 2)("JGE" . 3)("JLT" . 4)
+             ("JNE" . 5)("JLE" . 6)("JMP" . 7))
+        do (setf (gethash key hash) value))
+  (defun jumpcodes (cmd)
+    (gethash cmd hash)))
+
+(let ((next 16))
+  (defun nextAddress ()
+    (incf next)
+    (- next 1)))
 
 ; Objects defined, do the thing
 (defvar *parse* (make-instance 'parse :file (first *args*)))
