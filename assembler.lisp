@@ -117,6 +117,7 @@
       (num->bin (jumpcodes cmd) 3)
       "000")))
 
+; Methods to handle the specific command types
 (defmethod processCommand ((type (eql 'C)))
   (let ((code (make-instance 'code
                              :dest (dest *parse*)
@@ -126,8 +127,7 @@
 
 (defmethod processCommand ((type (eql 'A)))
   (labels ((numericp (x) (ignore-errors (parse-integer x))))
-    (let ((a (symbol *parse*))
-          (num 0))
+    (let ((a (symbol *parse*)) (num 0))
       (if (numericp a)
         (setf num (parse-integer a))
         (progn
@@ -140,6 +140,7 @@
   ; Nothing to do on L-commands
   nil)
 
+; Utility functions
 (defun stringstart (str chr)
   (string= chr str :start2 0 :end2 1))
 
@@ -155,6 +156,7 @@
 (defun num->bin (num size)
   (format nil "~v,'0b" size num))
 
+; Functions that we want to have data via closure
 (let ((hash (make-hash-table :test 'equal)))
   (loop for (key . value)
         in '(("JGT" . 1)("JEQ" . 2)("JGE" . 3)("JLT" . 4)
@@ -168,7 +170,8 @@
     (incf next)
     (- next 1)))
 
-; Objects defined, do the thing
+; Everything now defined, actually do the assembly
+; First, get a file to parse
 (defvar *parse* (make-instance 'parse :file (first *args*)))
 
 ; We need a mnemonic conversion table. Stick it in a hash
@@ -177,7 +180,7 @@
 ; Create symbol table
 (defvar *st* (make-instance 'symbolTable))
 
-; To drastically reduce repetition, use a funky loop to populate the hash
+; To drastically reduce repetition, use a funky loop to populate the mnemonics hash
 (loop for (key value)
       on '("0"   "0101010" "1"   "0111111" "-1"  "0111010" "D"   "0001100"
            "A"   "0110000" "!D"  "0001101" "!A"  "0110001" "-D"  "0001111"
@@ -192,15 +195,12 @@
 ; Add default symbol table values
 (loop for i from 0 to 15
       do (addEntry *st* (format nil "R~a" i) i))
-(addEntry *st* "SP"     0)
-(addEntry *st* "LCL"    1)
-(addEntry *st* "ARG"    2)
-(addEntry *st* "THIS"   3)
-(addEntry *st* "THAT"   4)
-(addEntry *st* "KBD"    24576)
-(addEntry *st* "SCREEN" 16384)
+(loop for (key value)
+      on (list "SP" 0 "LCL" 1 "ARG" 2 "THIS" 3 "THAT" 4 "KBD" 24576 "SCREEN" 16384)
+      by #'cddr
+      do (addEntry *st* key value))
 
-; Scan for symbols defined in code
+; Scan for labels in code
 (loop with line = 0
       while (hasMoreCommands *parse*)
       do (progn
