@@ -5,14 +5,7 @@
   ((filename :initarg :file
              :reader filename)
    (line :initform 0 :accessor line)
-   (data :initform nil :accessor data)
-   ; Put a hash in the object for the jumpcodes
-   (jumpcodes :initform (let ((hash (make-hash-table :test 'equal)))
-                          (loop for (key . value)
-                                in '(("JGT" . 1)("JEQ" . 2)("JGE" . 3)("JLT" . 4)
-                                     ("JNE" . 5)("JLE" . 6)("JMP" . 7))
-                                do (setf (gethash key hash) value))
-                          hash) :accessor jumpcodes) ))
+   (data :initform nil :accessor data)))
 
 ; Define the Code class
 (defclass code ()
@@ -89,6 +82,14 @@
 (defun num->bin (num size)
   (format nil "~v,'0b" size num))
 
+(let ((hash (make-hash-table :test 'equal)))
+  (loop for (key . value)
+        in '(("JGT" . 1)("JEQ" . 2)("JGE" . 3)("JLT" . 4)
+             ("JNE" . 5)("JLE" . 6)("JMP" . 7))
+        do (setf (gethash key hash) value))
+  (defun jumpcodes (cmd)
+    (gethash cmd hash)))
+
 (let ((next 16))
   (defun nextAddress ()
     (incf next)
@@ -141,7 +142,7 @@
 (defmethod jump ((c code))
   (let ((cmd (j c)))
     (if cmd
-      (num->bin (gethash cmd (jumpcodes *parse*)) 3)
+      (num->bin (jumpcodes cmd) 3)
       "000")))
 
 (defmethod processCommand ((type (eql 'C)))
