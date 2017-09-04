@@ -22,7 +22,7 @@
 
 ;Define the Symbol Table class
 (defclass symbolTable ()
-  ((table :initform (make-hash-table) :accessor table)))
+  ((table :initform (make-hash-table :test 'equal) :accessor symbols)))
 
 (defmethod addEntry ((table symbolTable) k v)
   (setf (gethash k (table table)) v))
