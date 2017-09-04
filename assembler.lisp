@@ -20,6 +20,19 @@
    (comp :initarg :comp :reader c)
    (jump :initarg :jump :reader j)))
 
+;Define the Symbol Table class
+(defclass symbolTable ()
+  ((table :initform (make-hash-table) :accessor table)))
+
+(defmethod addEntry ((table symbolTable) k v)
+  (setf (gethash k (table table)) v))
+
+(defmethod contains ((table symbolTable) k)
+  (gethash k (table table)))
+
+(defmethod GetAddress ((table symbolTable) k)
+  (gethash k (table table)))
+
 ; Define the Parse methods
 ; On initialization, read the file
 (defmethod initialize-instance :after ((p parse) &key)
@@ -153,6 +166,20 @@
 
 (defmethod processCommand (type)
   (format t "0~a~%" (num->bin (parse-integer (symbol *parse*)) 15)))
+
+; Create symbol table
+(defvar *st* (make-instance 'symbolTable))
+
+; Add default symbol table values
+(loop for i from 0 to 15
+      do (addEntry *st* (format nil "R~a" i) i))
+(addEntry *st* "SP"     0)
+(addEntry *st* "LCL"    1)
+(addEntry *st* "ARG"    2)
+(addEntry *st* "THIS"   3)
+(addEntry *st* "THAT"   4)
+(addEntry *st* "KBD"    24576)
+(addEntry *st* "SCREEN" 16384)
 
 (loop for line = (current *parse*)
       while (hasMoreCommands *parse*)
