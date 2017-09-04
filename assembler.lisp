@@ -181,6 +181,19 @@
 (addEntry *st* "KBD"    24576)
 (addEntry *st* "SCREEN" 16384)
 
+; Scan for symbols defined in code
+(loop with line = 0
+      while (hasMoreCommands *parse*)
+      do (progn
+           (if (eq 'L (commandType *parse*))
+             (addEntry *st* (symbol *parse*) line)
+             (incf line))
+           (advance *parse*)))
+
+; Get ready for the second pass
+(reset *parse*)
+
+; Do the conversion to binary!
 (loop for line = (current *parse*)
       while (hasMoreCommands *parse*)
       do (progn
