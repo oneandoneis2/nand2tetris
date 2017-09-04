@@ -91,7 +91,7 @@
 
 (defmethod symbol ((p parse))
   (forcmd (cond ((stringstart cmd "@") (subseq cmd 1))
-                ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 2)))
+                ((stringstart cmd "(") (subseq cmd 1 (- (length cmd) 1)))
                 (t (error "Can't get symbol from ~a" cmd)))))
 
 ; The parse & code methods
