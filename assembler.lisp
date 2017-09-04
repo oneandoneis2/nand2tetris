@@ -25,13 +25,13 @@
   ((table :initform (make-hash-table :test 'equal) :accessor symbols)))
 
 (defmethod addEntry ((table symbolTable) k v)
-  (setf (gethash k (table table)) v))
+  (setf (gethash k (symbols table)) v))
 
 (defmethod contains ((table symbolTable) k)
-  (gethash k (table table)))
+  (gethash k (symbols table)))
 
 (defmethod GetAddress ((table symbolTable) k)
-  (gethash k (table table)))
+  (gethash k (symbols table)))
 
 ; Define the Parse methods
 ; On initialization, read the file
